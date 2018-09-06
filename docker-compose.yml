@@ -1,0 +1,58 @@
+version: '3.1'
+
+volumes:
+    todo_db_vol: {}
+
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+  db:
+    image: postgres:10.1
+    volumes:
+      - todo_db_vol:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=todo_db
+      - POSTGRES_USER=moai
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -q -U postgres"] 
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  todo_app:
+    build: 
+      context: .
+      dockerfile: Dockerfile-dev
+    environment:
+      - DJANGO_DEBUG=True
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_PORT=5432
+      - DJANGO_DB_NAME=todo_db
+      - DJANGO_DB_USERNAME=moai
+      - DJANGO_DB_PASSWORD=secret
+
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+      - DJANGO_SETTINGS_MODULE=todoapp.settings.development
+
+    command: /app/run_with_migrate.sh
+    volumes:
+      - ./manage.py:/app/manage.py
+      - ./requirements.txt:/app/requirements.txt
+      - ./run_with_migrate.sh:/app/run_with_migrate.sh
+      - ./todoapp:/app/todoapp
+      - ./apps:/app/apps
+    ports:
+      - 8000:8000
+    restart: on-failure
+    restart: always
+    depends_on:
+      - db
+    links: 
+      - db
+      - redis

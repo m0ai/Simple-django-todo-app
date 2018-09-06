@@ -1,0 +1,19 @@
+# pull base image
+FROM python:3.7
+
+# set environment varibles
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Install dependencies
+RUN pip install --upgrade pip
+
+# Set work directory
+WORKDIR /app
+
+# Install dependencies
+ADD ./requirements.txt   /app/
+RUN pip install -r requirements.txt
+
+
+
